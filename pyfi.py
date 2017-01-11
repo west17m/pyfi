@@ -16,6 +16,8 @@ try:
   from tabulate import tabulate
   from bokeh.plotting import figure, output_file, show, save, gridplot, vplot
   from bokeh.models import ColumnDataSource, Tool, WheelZoomTool, BoxSelectTool
+  from bokeh.models.widgets import DataTable, DateFormatter, TableColumn
+  from bokeh.io import vform
 except ImportError:
   print "Unmet dependencies were found.  Here are the dependencies:"
   for lib in libs:
@@ -48,7 +50,7 @@ class finance():
       balances.append(balance)
     return pd.DataFrame({
      'account': accounts,
-     'balance': balances}).sort_values(by='account'))
+     'balance': balances}).sort_values(by='account')
 
   def print_balances(self):
     """
@@ -139,19 +141,56 @@ class finance():
     return len(self.ledger.index)
 
   def print_all_transactions(self):
-    print "all transactions"
-    print_table(self.ledger)
-    print "end all transactions"
+    print "+------------+-----------------+\n| All Transactions"
+    self.print_table(self.ledger)
+
+  def get_data_table(self):
+    #output_file("data_table.html")
+
+    source = ColumnDataSource(self.ledger)
+
+    columns = [
+      
+      TableColumn(field=c, title=c) for c in self.ledger.columns
+    ]
+
+    columns[0] = TableColumn(field="date", title="date", formatter=DateFormatter())
+    data_table = DataTable(source=source, columns=columns, editable=True, width = 800, height=600)
+    #save(data_table)
+    return data_table
+
+    #columns = [
+    #    TableColumn(field="date", title="Date", formatter=DateFormatter()),
+    #    TableColumn(field="debit", title="Downloads"),
+    #    TableColumn(field="credit", title="Downloads"),
+    #]
+    #data_table = DataTable(source=source, width=400, height=280)
+    #
+    #show(vform(data_table))
+
+  def get_category_rates(self):
+    """
+      return a Series of user-defined categories and occurences
+    """
+
+    return self.ledger['category'].value_counts()
+
+  def get_category_list(self):
+    return self.get_category_rates().index.tolist()
+
+  def get_category_count_list(self):
+    return self.get_category_rates().values
 
   def all(self):
     """
       run several pre-defined methods
     """
 
-    #print "transactions:",self.get_number_transactions()
     self.print_all_transactions()
-    #self.print_register_all_accounts()
-    #self.print_balances()
+    self.print_register_all_accounts()
+    self.print_balances()
+    self.graph_all_balance()
+    self.print_table(pd.DataFrame({'category':self.get_category_list(),'count':self.get_category_count_list()}))
 
   def get_balance_graph_by_account(self,account):
     """
@@ -190,9 +229,12 @@ class finance():
     figures.append(row)
 
     p = gridplot(figures) # todo make grid
+    dt = self.get_data_table()
+
+    q = vplot(*[p,dt])
 
     # save the results
-    save(p)
+    save(q)
 
 def main():
   """
