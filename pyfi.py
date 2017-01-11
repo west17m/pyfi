@@ -150,7 +150,6 @@ class finance():
     source = ColumnDataSource(self.ledger)
 
     columns = [
-      
       TableColumn(field=c, title=c) for c in self.ledger.columns
     ]
 
@@ -254,3 +253,5 @@ def main():
 if __name__ == '__main__':
   main()
   sys.exit()
+
+# TODO make readmme
