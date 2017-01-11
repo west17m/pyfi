@@ -19,17 +19,22 @@ def main():
   for account in accounts:
     account_ledger = pd.concat([ledger.loc[ledger['debit'] == account],ledger.loc[ledger['credit'] == account]])
     debit  = -1 * (account_ledger.loc[account_ledger['debit']  == account])['amount'].sum()
-    credit = (account_ledger.loc[account_ledger['credit'] == account])['amount'].sum()
+    credit = (account_ledger.loc[account_ledger['credit'] == account])['amount']
+    exchange = (account_ledger.loc[account_ledger['credit'] == account])['exchange']
+    credit = credit.multiply(exchange).sum()
     balance = debit + credit
     balances.append(balance)
-    print account,balance
-    print account_ledger
     print "********************************************************"
-
-  print balances
-  print accounts
-  print pd.DataFrame({'account': accounts,
-     'balance': balances}).sort_index(by='account')
+    print account,':',balance
+    print "********************************************************"
+    print account_ledger
+    #print 'exchange',exchange
+    
+    print '\n\n'
+  print pd.DataFrame({
+     'account': accounts,
+     'balance': balances}).sort_values(by='account')
+  print "transactions:",len(ledger.index)
   print "done"
 
 if __name__ == '__main__':
