@@ -3,10 +3,12 @@
 import sys
 
 # external libraries
-libs=['pandas','tabulate']
+libs=['pandas','tabulate','bokeh']
 try:
   import pandas as pd
   from tabulate import tabulate
+  from bokeh.plotting import figure, output_file, show, save, gridplot, vplot
+  from bokeh.models import ColumnDataSource, Tool, WheelZoomTool, BoxSelectTool
 except ImportError:
   print "Unmet dependencies were found.  Here are the dependencies:"
   for lib in libs:
@@ -17,6 +19,7 @@ class finance():
 
   def __init__(self,ledger_file,account_file):
     self.ledger = pd.read_csv('ledger.tsv.csv',sep='\t')
+    self.ledger['date'] = pd.to_datetime(self.ledger['date'],infer_datetime_format=True)
     self.accounts = account_file
 
   def print_balances(self):
@@ -110,6 +113,42 @@ class finance():
     self.print_ledger_all_accounts()
     self.print_balances()
 
+  def graph_balance(self,account):
+    ledger = self.get_ledger_by_account(account)
+
+    # create a new plot with a title and axis labels
+    p = figure(title=(account + " balance"), x_axis_label='date', y_axis_label='balance',x_axis_type="datetime",width=400, height=400)
+    p.add_tools(WheelZoomTool())
+
+    # add a line renderer with legend and line thickness
+    p.line(ledger['date'], ledger['balance'], legend="balance", line_width=2)
+
+    return p
+
+  def graph_all_balance(self):
+
+    # output to static HTML file
+    output_file("output/charts.html")
+
+    max_per_row = 4
+    figures = []
+    row = []
+    for account in self.get_accounts():
+      figure = self.graph_balance(account)
+      if len(row) >= max_per_row:
+        figures.append(row)
+        row=[figure]
+      else:
+        row.append(figure)
+
+    figures.append(row)
+
+    p = gridplot(figures) # todo make grid
+
+    # save the results
+    save(p)
+
+
 def main():
   print "main"
   a = finance(
@@ -118,6 +157,8 @@ def main():
   a.all()
   #a.print_ledger_by_account('td-checking')
   #a.print_ledger_by_account('vu-checking')
+  # a.graph_balance('vu-checking')
+  a.graph_all_balance()
   print "done"
 
 if __name__ == '__main__':

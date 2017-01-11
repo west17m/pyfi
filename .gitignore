@@ -2,4 +2,4 @@
 .~*
 credit.tsv.csv
 ledger.tsv.csv
-
+output/*
