@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys
+import sys, os
 
 ##################################
 #
@@ -56,8 +56,12 @@ class finance():
     """
       print accounts and balances to the screen
     """
-    # todo format currency
-    self.print_table(self.get_balances())
+    # todo replace this with a call to a central currency format function
+    balances = self.get_balances()
+    total = balances['balance'].sum()
+    balances['balance'] = balances['balance'].map('{:,.2f}'.format)
+    self.print_table(balances)
+    print total
 
   def get_register_by_account(self,account):
     """
@@ -102,6 +106,34 @@ class finance():
     account_ledger = account_ledger[['date','account','category','description','amount','balance']]
 
     return account_ledger
+
+  def print_root_account(self):
+
+    register = self.get_root_account()
+    header = 'root'
+
+    # todo change this to function print_register
+    # change format of currency columns
+    cur_columns = ['amount','balance']
+    for col in cur_columns:
+      register[col] = register[col].map('{:,.2f}'.format)
+
+    # print account header
+    print "+------------+-----------------+\n| ",header
+    self.print_table(register)
+
+  def get_root_account(self):
+    account_ledger = self.get_register_by_account('root')
+    account_ledger = account_ledger.drop('balance',1)
+
+    # from our perspective, all these values are negated
+    account_ledger['amount'] = account_ledger['amount'].multiply(-1)
+
+    # recreate a running balance
+    account_ledger['balance'] = account_ledger['amount'].cumsum()
+
+    return account_ledger
+
 
   def print_register_by_account(self,account):
 
@@ -190,6 +222,7 @@ class finance():
     self.print_balances()
     self.graph_all_balance()
     self.print_table(pd.DataFrame({'category':self.get_category_list(),'count':self.get_category_count_list()}))
+    self.print_root_account()
 
   def get_balance_graph_by_account(self,account):
     """
@@ -235,6 +268,40 @@ class finance():
     # save the results
     save(q)
 
+  def menu(self):
+
+    _=os.system("clear")
+    while True:
+      accounts = self.get_balances()
+
+      # remove 'special' accounts
+      for account in ['root','init','income']:
+        accounts = accounts[accounts.account != account]
+
+      # add numeric choices for menu
+      accounts['num'] = range(1, len(accounts.index)+1,1)
+
+      print "1: accounts\n" + \
+            "2: income summary\n" + \
+            "3: net debit/credit\n" + \
+            "q: quit"
+      choice = raw_input('Enter your input: ')
+      if choice == "q":
+        break
+      elif choice == "1":
+        self.print_table(accounts[['num','account','balance']])
+        choice = raw_input('Enter your input: ')
+        if choice == "q":
+          break
+        elif choice == "p":
+          break
+        else:
+          account = accounts.loc[accounts.loc[:,'num'] == int(choice)]['account'].values[0]
+          # print account
+          self.print_register_by_account(account)
+          raw_input("Press Enter to continue...")
+
+
 def main():
   """
     execute this code from the command line
@@ -243,7 +310,8 @@ def main():
   a = finance(
          ledger_file = 'ledger.tsv.csv',
          account_file = 'credit.tsv.csv')
-  a.all()
+  # a.all()
+  a.menu()
   #a.print_register_by_account('td-checking')
   #a.print_register_by_account('vu-checking')
   # a.get_balance_graph_by_account('vu-checking')
@@ -255,3 +323,4 @@ if __name__ == '__main__':
   sys.exit()
 
 # TODO make readmme
+
