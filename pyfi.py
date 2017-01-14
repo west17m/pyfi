@@ -126,6 +126,7 @@ class finance():
     account_ledger = self.get_register_by_account('root')
     account_ledger = account_ledger.drop('balance',1)
 
+    account_ledger = account_ledger.loc[account_ledger.loc[:,'category'] != 'init']
     # from our perspective, all these values are negated
     account_ledger['amount'] = account_ledger['amount'].multiply(-1)
 
@@ -281,9 +282,14 @@ class finance():
       # add numeric choices for menu
       accounts['num'] = range(1, len(accounts.index)+1,1)
 
+      # format balances
+      accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
+
       print "1: accounts\n" + \
             "2: income summary\n" + \
             "3: net debit/credit\n" + \
+            "4: full ledger\n" + \
+            "5: enter a new transaction\n" + \
             "q: quit"
       choice = raw_input('Enter your input: ')
       if choice == "q":
@@ -300,6 +306,26 @@ class finance():
           # print account
           self.print_register_by_account(account)
           raw_input("Press Enter to continue...")
+      elif choice == "2":
+        self.print_register_by_account('income')
+        raw_input("Press Enter to continue...")
+      elif choice == "3":
+        self.print_root_account()
+        raw_input("Press Enter to continue...")
+      elif choice == "4":
+        self.print_all_transactions()
+        raw_input("Press Enter to continue...")
+      elif choice == "5":
+        self.print_table(accounts[['num','account','balance']])
+        debit  = raw_input('  From: ')
+        credit = raw_input('   To: ')
+        amount = raw_input('Amount: ')
+        print self.get_category_rates()
+        category = raw_input('Category: ')
+        description = raw_input('Description: ')
+        exchange = raw_input('Exchange: ')
+        print debit,credit,amount,category,description,exchange
+
 
 
 def main():
