@@ -6,7 +6,7 @@ import sys, os
 #
 # check for
 # external libraries
-#
+# pip install --upgrade google-api-python-client
 ##################################
 
 libs=['pandas','tabulate','bokeh']
@@ -29,7 +29,7 @@ except ImportError:
 class finance():
 
   def __init__(self,ledger_file,account_file):
-    self.ledger = pd.read_csv('ledger.tsv.csv',sep='\t')
+    self.ledger = pd.read_csv('ledger.tsv.csv',sep=',')
     self.ledger['date'] = pd.to_datetime(self.ledger['date'],infer_datetime_format=True)
     self.ledger.sort_values('date',inplace=True)
     self.accounts = account_file
@@ -269,6 +269,33 @@ class finance():
     # save the results
     save(q)
 
+  def render_html(self):
+    print "rendering html"
+    data = self.ledger
+    # todo format amount
+    table = tabulate(data,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
+    fo = open("site/ledger.html", "w+")
+    fo.write(table)
+    fo.close()
+
+    # todo replace with function (get accounts w/o specials)
+    accounts = self.get_balances()
+    # remove 'special' accounts
+    for account in ['root','init','income']:
+      accounts = accounts[accounts.account != account]
+
+    # format balances
+    accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
+
+    data = accounts
+    table = tabulate(data,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
+    fo = open("site/accounts.html", "w+")
+    fo.write(table)
+    fo.close()
+    # todo replace class at table level <table class="table-fill">
+    # add home link
+
+
   def menu(self):
 
     _=os.system("clear")
@@ -290,6 +317,8 @@ class finance():
             "3: net debit/credit\n" + \
             "4: full ledger\n" + \
             "5: enter a new transaction\n" + \
+            "6: print expense\n" + \
+            "7: write html\n" + \
             "q: quit"
       choice = raw_input('Enter your input: ')
       if choice == "q":
@@ -325,8 +354,17 @@ class finance():
         description = raw_input('Description: ')
         exchange = raw_input('Exchange: ')
         print debit,credit,amount,category,description,exchange
-
-
+      elif choice == "6":
+        a = self.get_root_account()
+        a = a.drop('balance',1)
+        a = a.loc[a['amount'] < 0]
+        a['balance'] = a['amount'].cumsum()
+        # format balances
+        a['balance'] = a['balance'].map('{:,.2f}'.format)
+        a['amount']  = a['amount'].map('{:,.2f}'.format)
+        self.print_table(a)
+      elif choice == "7":
+        self.render_html()
 
 def main():
   """
