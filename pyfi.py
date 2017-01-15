@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os, re
-
+import pyfi_cli
 
 ##################################
 #
@@ -25,6 +25,34 @@ except ImportError:
   for lib in libs:
     print " * " + lib
   sys.exit(1)
+
+##################################
+
+# Utility Functions
+# todo move to other file
+
+def print_table_cli(data,header=None):
+  """
+    Use a standard method to display tabular data on screen
+  """
+
+  if header != None:
+    # todo should run tabulate first, then calculat the width of the table and maek the header span
+    #   and possible center the full rowspan
+    # print account header
+    print "+------------+-----------------+\n| ",header
+
+  print tabulate(data,showindex=False,headers="keys",tablefmt="grid",numalign="right",stralign="right")
+
+
+def format_currency(series):
+  return series.map('{:,.2f}'.format)
+
+def get_indented_html(html):
+
+  # make BeautifulSoup with 2 spaces instead of 1
+  r = re.compile(r'^(\s*)', re.MULTILINE)
+  return r.sub(r'\1\1', bs(html).prettify())
 
 ##################################
 
@@ -53,17 +81,6 @@ class Ledger():
     return pd.DataFrame({
      'account': accounts,
      'balance': balances}).sort_values(by='account')
-
-  def print_balances(self):
-    """
-      print accounts and balances to the screen
-    """
-    # todo replace this with a call to a central currency format function
-    balances = self.get_balances()
-    total = balances['balance'].sum()
-    balances['balance'] = balances['balance'].map('{:,.2f}'.format)
-    self.print_table(balances)
-    print total
 
   def get_register_by_account(self,account):
     """
@@ -109,21 +126,6 @@ class Ledger():
 
     return account_ledger
 
-  def print_root_account(self):
-
-    register = self.get_root_account()
-    header = 'root'
-
-    # todo change this to function print_register
-    # change format of currency columns
-    cur_columns = ['amount','balance']
-    for col in cur_columns:
-      register[col] = register[col].map('{:,.2f}'.format)
-
-    # print account header
-    print "+------------+-----------------+\n| ",header
-    self.print_table(register)
-
   def get_root_account(self):
     account_ledger = self.get_register_by_account('root')
     account_ledger = account_ledger.drop('balance',1)
@@ -137,20 +139,6 @@ class Ledger():
 
     return account_ledger
 
-
-  def print_register_by_account(self,account):
-
-    account_ledger = self.get_register_by_account(account)
-
-    # change format of currency columns
-    cur_columns = ['amount','balance']
-    for col in cur_columns:
-      account_ledger[col] = account_ledger[col].map('{:,.2f}'.format)
-
-    # print account header
-    print "+------------+-----------------+\n| ",account
-    self.print_table(account_ledger)
-
   def get_accounts(self):
     """
       a list of unique accounts
@@ -158,26 +146,8 @@ class Ledger():
     accounts = pd.unique(self.ledger[['debit', 'credit']].values.ravel())
     return sorted(accounts)
 
-  def print_register_all_accounts(self):
-    """
-       print a register to the screen for each account found
-    """
-
-    for account in self.get_accounts():
-      self.print_register_by_account(account)
-
-  def print_table(self,data):
-    """
-      Use a standard method to display tabular data on screen
-    """
-    print tabulate(data,showindex=False,headers="keys",tablefmt="grid",numalign="right",stralign="right")
-
   def get_number_transactions(self):
     return len(self.ledger.index)
-
-  def print_all_transactions(self):
-    print "+------------+-----------------+\n| All Transactions"
-    self.print_table(self.ledger)
 
   def get_data_table(self):
     #output_file("data_table.html")
@@ -220,11 +190,13 @@ class Ledger():
       run several pre-defined methods
     """
 
+    # todo refactor
+
     self.print_all_transactions()
     self.print_register_all_accounts()
     self.print_balances()
     self.graph_all_balance()
-    self.print_table(pd.DataFrame({'category':self.get_category_list(),'count':self.get_category_count_list()}))
+    print_table_cli(pd.DataFrame({'category':self.get_category_list(),'count':self.get_category_count_list()}))
     self.print_root_account()
 
   def get_balance_graph_by_account(self,account):
@@ -232,6 +204,8 @@ class Ledger():
       return a balance over time graph for a given account as a bokeh figure object
     """
     ledger = self.get_register_by_account(account)
+
+    # todo move this whole function to hmtl class
 
     # create a new plot with a title and axis labels
     p = figure(title=(account + " balance"), x_axis_label='date', y_axis_label='balance',x_axis_type="datetime",width=400, height=400)
@@ -246,6 +220,8 @@ class Ledger():
     """
       Create a balance over time graph for all accounts
     """
+
+    # todo move this whole function to hmtl class
 
     # output to static HTML file
     output_file("output/charts.html")
@@ -272,6 +248,7 @@ class Ledger():
     save(q)
 
   def get_classes(self):
+    # todo move this whole function to hmtl class
     return {
       'table': 'table',
       'thead': 'thead',
@@ -282,6 +259,7 @@ class Ledger():
     }
 
   def get_html_header(self):
+    # todo move this whole function to hmtl class
     static_dir = 'site/static/'
     header = ''
     with open(static_dir + 'header.html', 'r') as myfile:
@@ -290,6 +268,7 @@ class Ledger():
 
   # since all the static elements are the same, these functions could be combined
   def get_html_footer(self):
+    # todo move this whole function to hmtl class
     static_dir = 'site/static/'
     footer = ''
     with open(static_dir + 'footer.html', 'r') as myfile:
@@ -297,6 +276,7 @@ class Ledger():
     return footer
 
   def render_ledger(self):
+    # todo move this whole function to hmtl class
 
     # LEDGER (no processing needed)
 
@@ -306,7 +286,7 @@ class Ledger():
     for account in ['root','init','income']:
       accounts = accounts[accounts.account != account]
     # format balances
-    accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
+    accounts['balance'] = format_currency(accounts['balance'])
     # self.render_html(accounts,"accounts.html")
 
     site=[
@@ -325,6 +305,7 @@ class Ledger():
       self.render_html(table,filename,menu)
 
   def render_html(self,df,filename,menu):
+    # todo move this whole function to hmtl class
     # print "rendering html"
 
     # get the static elements of the page
@@ -345,13 +326,7 @@ class Ledger():
     # combine static and generated elements of page
     raw_html = header + menu + table + footer
 
-    # get a proper indent
-    soup=bs(raw_html)            #make BeautifulSoup
-    prettyHTML=soup.prettify()   #prettify the html
-
-    # 2 spaces instead of 1
-    r = re.compile(r'^(\s*)', re.MULTILINE)
-    prettyHTML = r.sub(r'\1\1', prettyHTML)
+    prettyHTML = get_indented_html(raw_html)
 
     # write the file
     fo = open("site/site_root/" + filename, "w+")
@@ -369,6 +344,56 @@ class PyFiCLI():
     self.ledger = Ledger(ledger_file,account_file)
     self.accounts = account_file
 
+  #
+  # printing
+  #
+
+  def print_balances(self):
+    """
+      print accounts and balances to the screen
+    """
+    # todo replace this with a call to a central currency format function
+    balances = self.ledger.get_balances()
+    total = balances['balance'].sum()
+    balances['balance'] = format_currency(balances['balance'])
+    print_table_cli(balances)
+    print total
+
+  def print_root_account(self):
+
+    register = self.ledger.get_root_account()
+    header = 'root'
+
+    cur_columns = ['amount','balance']
+    for col in cur_columns:
+      register[col] = format_currency(register[col])
+
+    print_table_cli(register,header)
+
+  def print_register_by_account(self,account):
+
+    account_ledger = self.ledger.get_register_by_account(account)
+
+    # change format of currency columns
+    cur_columns = ['amount','balance']
+    for col in cur_columns:
+      account_ledger[col] = format_currency(account_ledger[col])
+
+    print_table_cli(account_ledger,account)
+
+  def print_register_all_accounts(self):
+    """
+       print a register to the screen for each account found
+    """
+
+    for account in self.ledger.get_accounts():
+      self.print_register_by_account(account)
+
+  def print_all_transactions(self):
+    # print self.ledger.ledger
+    # todo replace with get_all_transactions()
+    print_table_cli(self.ledger.ledger,"All Transactions")
+
   def menu(self):
 
     _=os.system("clear")
@@ -383,7 +408,7 @@ class PyFiCLI():
       accounts['num'] = range(1, len(accounts.index)+1,1)
 
       # format balances
-      accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
+      accounts['balance'] = format_currency(accounts['balance'])
 
       print "1: accounts\n" + \
             "2: income summary\n" + \
@@ -397,7 +422,7 @@ class PyFiCLI():
       if choice == "q":
         break
       elif choice == "1":
-        self.ledger.print_table(accounts[['num','account','balance']])
+        print_table_cli(accounts[['num','account','balance']])
         choice = raw_input('Enter your input: ')
         if choice == "q":
           break
@@ -406,19 +431,19 @@ class PyFiCLI():
         else:
           account = accounts.loc[accounts.loc[:,'num'] == int(choice)]['account'].values[0]
           # print account
-          self.ledger.print_register_by_account(account)
+          self.print_register_by_account(account)
           raw_input("Press Enter to continue...")
       elif choice == "2":
-        self.ledger.print_register_by_account('income')
+        self.print_register_by_account('income')
         raw_input("Press Enter to continue...")
       elif choice == "3":
-        self.ledger.print_root_account()
+        self.print_root_account()
         raw_input("Press Enter to continue...")
       elif choice == "4":
-        self.ledger.print_all_transactions()
+        self.print_all_transactions()
         raw_input("Press Enter to continue...")
       elif choice == "5":
-        self.ledger.print_table(accounts[['num','account','balance']])
+        print_table_cli(accounts[['num','account','balance']])
         debit  = raw_input('  From: ')
         credit = raw_input('   To: ')
         amount = raw_input('Amount: ')
@@ -433,9 +458,9 @@ class PyFiCLI():
         a = a.loc[a['amount'] < 0]
         a['balance'] = a['amount'].cumsum()
         # format balances
-        a['balance'] = a['balance'].map('{:,.2f}'.format)
-        a['amount']  = a['amount'].map('{:,.2f}'.format)
-        self.ledger.print_table(a)
+        a['balance'] = format_currency(a['balance'])
+        a['amount']  = format_currency(a['amount'])
+        print_table_cli(a)
       elif choice == "7":
         self.ledger.render_ledger()
 
@@ -459,4 +484,6 @@ if __name__ == '__main__':
   sys.exit()
 
 # TODO make readmme
+
+
 
