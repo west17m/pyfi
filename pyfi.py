@@ -28,7 +28,7 @@ except ImportError:
 
 ##################################
 
-class finance():
+class Ledger():
 
   def __init__(self,ledger_file,account_file):
     self.ledger = pd.read_csv('ledger.tsv.csv',sep=',')
@@ -358,31 +358,22 @@ class finance():
     fo.write(prettyHTML)
     fo.close()
 
-    # todo replace with function (get accounts w/o specials)
-    #accounts = self.get_balances()
-    # remove 'special' accounts
-    #for account in ['root','init','income']:
-    #  accounts = accounts[accounts.account != account]
+class PyFiCLI():
+  """
+    Command line interface to PyFi
+  """
+  ledger   = None
+  accounts = None
 
-    # format balances
-    #accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
-
-    #data = accounts
-    #table = tabulate(data,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
-    #fo = open("site/accounts.php", "w+")
-    #fo.write('<?php include("header.php"); ?>\n')
-    #fo.write(table)
-    #fo.write('<?php include("footer.php"); ?>\n')
-    #fo.close()
-    # todo replace class at table level <table class="table-fill">
-    # add home link
-
+  def __init__(self,ledger_file,account_file):
+    self.ledger = Ledger(ledger_file,account_file)
+    self.accounts = account_file
 
   def menu(self):
 
     _=os.system("clear")
     while True:
-      accounts = self.get_balances()
+      accounts = self.ledger.get_balances()
 
       # remove 'special' accounts
       for account in ['root','init','income']:
@@ -406,7 +397,7 @@ class finance():
       if choice == "q":
         break
       elif choice == "1":
-        self.print_table(accounts[['num','account','balance']])
+        self.ledger.print_table(accounts[['num','account','balance']])
         choice = raw_input('Enter your input: ')
         if choice == "q":
           break
@@ -415,57 +406,56 @@ class finance():
         else:
           account = accounts.loc[accounts.loc[:,'num'] == int(choice)]['account'].values[0]
           # print account
-          self.print_register_by_account(account)
+          self.ledger.print_register_by_account(account)
           raw_input("Press Enter to continue...")
       elif choice == "2":
-        self.print_register_by_account('income')
+        self.ledger.print_register_by_account('income')
         raw_input("Press Enter to continue...")
       elif choice == "3":
-        self.print_root_account()
+        self.ledger.print_root_account()
         raw_input("Press Enter to continue...")
       elif choice == "4":
-        self.print_all_transactions()
+        self.ledger.print_all_transactions()
         raw_input("Press Enter to continue...")
       elif choice == "5":
-        self.print_table(accounts[['num','account','balance']])
+        self.ledger.print_table(accounts[['num','account','balance']])
         debit  = raw_input('  From: ')
         credit = raw_input('   To: ')
         amount = raw_input('Amount: ')
-        print self.get_category_rates()
+        print self.ledger.get_category_rates()
         category = raw_input('Category: ')
         description = raw_input('Description: ')
         exchange = raw_input('Exchange: ')
         print debit,credit,amount,category,description,exchange
       elif choice == "6":
-        a = self.get_root_account()
+        a = self.ledger.get_root_account()
         a = a.drop('balance',1)
         a = a.loc[a['amount'] < 0]
         a['balance'] = a['amount'].cumsum()
         # format balances
         a['balance'] = a['balance'].map('{:,.2f}'.format)
         a['amount']  = a['amount'].map('{:,.2f}'.format)
-        self.print_table(a)
+        self.ledger.print_table(a)
       elif choice == "7":
-        self.render_ledger()
+        self.ledger.render_ledger()
 
 def main():
   """
     execute this code from the command line
   """
+
   print "main"
-  a = finance(
+  a = PyFiCLI(
          ledger_file = 'ledger.tsv.csv',
          account_file = 'credit.tsv.csv')
-  # a.all()
   a.menu()
-  #a.print_register_by_account('td-checking')
-  #a.print_register_by_account('vu-checking')
-  # a.get_balance_graph_by_account('vu-checking')
-  #a.graph_all_balance()
   print "done"
 
 if __name__ == '__main__':
   main()
+  # TODO create tableFormatter
+  # TODO check for --html-only flag and skip menu if just generating html
+  # TODO allow run-time passing of how the files are delimited
   sys.exit()
 
 # TODO make readmme
