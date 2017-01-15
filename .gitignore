@@ -3,6 +3,4 @@
 credit.tsv.csv
 ledger.tsv.csv
 output/*
-site/accounts.html
-site/ledger.html
-
+site/site_root/*.html

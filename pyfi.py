@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import sys, os
+import sys, os, re
+
 
 ##################################
 #
@@ -14,6 +15,7 @@ libs=['pandas','tabulate','bokeh']
 try:
   import pandas as pd
   from tabulate import tabulate
+  from BeautifulSoup import BeautifulSoup as bs
   from bokeh.plotting import figure, output_file, show, save, gridplot, vplot
   from bokeh.models import ColumnDataSource, Tool, WheelZoomTool, BoxSelectTool
   from bokeh.models.widgets import DataTable, DateFormatter, TableColumn
@@ -269,29 +271,109 @@ class finance():
     # save the results
     save(q)
 
-  def render_html(self):
-    print "rendering html"
-    data = self.ledger
-    # todo format amount
-    table = tabulate(data,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
-    fo = open("site/ledger.html", "w+")
-    fo.write(table)
-    fo.close()
+  def get_classes(self):
+    return {
+      'table': 'table',
+      'thead': 'thead',
+         'th': 'th',
+      'tbody': 'tbody',
+         'td': 'td',
+         'tr': 'tr',
+    }
 
-    # todo replace with function (get accounts w/o specials)
+  def get_html_header(self):
+    static_dir = 'site/static/'
+    header = ''
+    with open(static_dir + 'header.html', 'r') as myfile:
+      header=myfile.read().replace('\n', '')
+    return header
+
+  # since all the static elements are the same, these functions could be combined
+  def get_html_footer(self):
+    static_dir = 'site/static/'
+    footer = ''
+    with open(static_dir + 'footer.html', 'r') as myfile:
+      footer=myfile.read().replace('\n', '')
+    return footer
+
+  def render_ledger(self):
+
+    # LEDGER (no processing needed)
+
+    # ACCOUNTS
     accounts = self.get_balances()
     # remove 'special' accounts
     for account in ['root','init','income']:
       accounts = accounts[accounts.account != account]
-
     # format balances
     accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
+    # self.render_html(accounts,"accounts.html")
 
-    data = accounts
-    table = tabulate(data,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
-    fo = open("site/accounts.html", "w+")
-    fo.write(table)
+    site=[
+      [self.ledger,"ledger.html","Legder"],
+      [accounts,"accounts.html","Accounts"],
+    ]
+
+    # generate menu
+    menu = '<div class="menu"><ul>\n'
+    for table,filename,linkname in site:
+      menu = menu + "<li><a href=\"" + filename + "\">" + linkname + "</a></li>\n"
+    menu = menu + '</ul></div>\n'
+
+    # create html pages
+    for table,filename,linkname in site:
+      self.render_html(table,filename,menu)
+
+  def render_html(self,df,filename,menu):
+    # print "rendering html"
+
+    # get the static elements of the page
+    header = self.get_html_header()
+    footer = self.get_html_footer()
+
+    # todo format amount
+    table = tabulate(df,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
+
+    # get styles to insert and insert them
+    classes = self.get_classes()
+    for key in classes:
+      class_style = classes[key]
+      # todo combine the following to commands into one
+      table = re.sub('<'+ key + ' ','<'+ key + ' class="' + class_style + '"' + ' ' + ' ',table,flags=re.MULTILINE|re.IGNORECASE)
+      table = re.sub('<'+ key + '>','<'+ key + ' class="' + class_style + '"' + '>' + ' ',table,flags=re.MULTILINE|re.IGNORECASE)
+
+    # combine static and generated elements of page
+    raw_html = header + menu + table + footer
+
+    # get a proper indent
+    soup=bs(raw_html)            #make BeautifulSoup
+    prettyHTML=soup.prettify()   #prettify the html
+
+    # 2 spaces instead of 1
+    r = re.compile(r'^(\s*)', re.MULTILINE)
+    prettyHTML = r.sub(r'\1\1', prettyHTML)
+
+    # write the file
+    fo = open("site/site_root/" + filename, "w+")
+    fo.write(prettyHTML)
     fo.close()
+
+    # todo replace with function (get accounts w/o specials)
+    #accounts = self.get_balances()
+    # remove 'special' accounts
+    #for account in ['root','init','income']:
+    #  accounts = accounts[accounts.account != account]
+
+    # format balances
+    #accounts['balance'] = accounts['balance'].map('{:,.2f}'.format)
+
+    #data = accounts
+    #table = tabulate(data,showindex=False,headers="keys",tablefmt="html",numalign="right",stralign="right")
+    #fo = open("site/accounts.php", "w+")
+    #fo.write('<?php include("header.php"); ?>\n')
+    #fo.write(table)
+    #fo.write('<?php include("footer.php"); ?>\n')
+    #fo.close()
     # todo replace class at table level <table class="table-fill">
     # add home link
 
@@ -364,7 +446,7 @@ class finance():
         a['amount']  = a['amount'].map('{:,.2f}'.format)
         self.print_table(a)
       elif choice == "7":
-        self.render_html()
+        self.render_ledger()
 
 def main():
   """
