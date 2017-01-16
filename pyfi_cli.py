@@ -95,6 +95,7 @@ class PyFiCLI():
             "5: enter a new transaction\n" + \
             "6: print expense\n" + \
             "7: write html\n" + \
+            "8: category totals\n" + \
             "q: quit"
       choice = raw_input('Enter your input: ')
       if choice == "q":
@@ -144,6 +145,10 @@ class PyFiCLI():
           self.ledger_file,
           self.accounts_file)
         a.render()
+      elif choice == "8":
+        categories = self.ledger.get_category_totals()
+        categories['amount'] = format_currency(categories['amount'])
+        print_table_cli(categories)
 
 def main():
   """

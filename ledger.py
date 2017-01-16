@@ -151,6 +151,13 @@ class Ledger():
   def get_category_count_list(self):
     return self.get_category_rates().values
 
+  def get_category_totals(self):
+    result = self.ledger.groupby('category').sum()
+    result = result.drop('exchange',1)
+    result.reset_index(inplace=True)
+    result.sort_values(by='amount', ascending=False, inplace=True)
+    return result
+
   def all(self):
     """
       run several pre-defined methods
