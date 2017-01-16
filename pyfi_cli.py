@@ -96,6 +96,7 @@ class PyFiCLI():
             "6: print expense\n" + \
             "7: write html\n" + \
             "8: category totals\n" + \
+            "9: category totals (net)\n" + \
             "q: quit"
       choice = raw_input('Enter your input: ')
       if choice == "q":
@@ -148,6 +149,9 @@ class PyFiCLI():
       elif choice == "8":
         categories = self.ledger.get_category_totals()
         categories['amount'] = format_currency(categories['amount'])
+        print_table_cli(categories)
+      elif choice == "9":
+        categories = self.ledger.get_net_category_expense_totals()
         print_table_cli(categories)
 
 def main():

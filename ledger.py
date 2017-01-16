@@ -158,19 +158,54 @@ class Ledger():
     result.sort_values(by='amount', ascending=False, inplace=True)
     return result
 
-  def all(self):
-    """
-      run several pre-defined methods
-    """
+  def get_net_category_expense_totals(self):
+    expenses = self.get_root_account()
 
-    # todo refactor
+    #######################
+    # use peferred categories
+    ###########################
 
-    self.print_all_transactions()
-    self.print_register_all_accounts()
-    self.print_balances()
-    self.graph_all_balance()
-    print_table_cli(pd.DataFrame({'category':self.get_category_list(),'count':self.get_category_count_list()}))
-    self.print_root_account()
+    # alias: preferred
+    pref = {
+      'Healthcare':      'medical',
+      'purchases':       'Unknown',
+      'Gas/Automotive':  'Gas',
+      'Other Services':  'Unknown',
+    }
+
+    pref = pd.DataFrame(list(pref.iteritems()), columns=['category','preferred'])
+    a = pd.merge(expenses,pref,how='left',on='category')
+    a.preferred.fillna(a.category, inplace=True)
+    del a['category']
+    a = a[['date', 'account', 'preferred','description', 'amount']]
+    a.columns = ['date', 'account', 'category','description', 'amount']
+
+    ## end prefered categories
+
+    expenses = a
+
+    result = expenses.groupby('category').sum()
+    # result = result.drop('balance',1)
+    result.reset_index(inplace=True)
+    result.sort_values(by='amount', ascending=False, inplace=True)
+    # print result['amount'].sum()
+    return result
+
+#  deprecated
+#
+#  def all(self):
+#    """
+#      run several pre-defined methods
+#    """
+#
+#    # todo refactor
+#
+#    self.print_all_transactions()
+#    self.print_register_all_accounts()
+#    self.print_balances()
+#    self.graph_all_balance()
+#    print_table_cli(pd.DataFrame({'category':self.get_category_list(),'count':self.get_category_count_list()}))
+#    self.print_root_account()
 
 if __name__ == '__main__':
   print "please call pyfi_cli.py or pyfi_html.py instead"
