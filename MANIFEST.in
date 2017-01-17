@@ -1,0 +1,4 @@
+include *.txt
+recursive-include examples *.txt *.py
+recursive-include pyfi/site *
+prune examples/sample?/build

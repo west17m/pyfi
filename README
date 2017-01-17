@@ -1,0 +1,6 @@
+README
+coming soon
+project structure based on http://docs.python-guide.org/en/latest/writing/structure/
+
+# build
+python setup.py sdist
