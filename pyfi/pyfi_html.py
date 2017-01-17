@@ -7,6 +7,7 @@ import sys, os
 from utilities import *
 # from pyfi_cli import PyFiCLI
 
+
 ##################################
 #
 # check for
@@ -41,6 +42,8 @@ class PyFiHTML():
   def __init__(self,ledger_file,account_file):
     self.ledger = Ledger(ledger_file,account_file)
     self.accounts = account_file
+    sys.path.append('./pyfi')
+    print os.getcwd()
 
   def get_balance_graph_by_account(self,account):
     """
@@ -127,7 +130,7 @@ class PyFiHTML():
 
   def get_html_header(self):
     # todo move this whole function to hmtl class
-    static_dir = 'site/static/'
+    static_dir = 'pyfi/site/static/'
     header = ''
     with open(static_dir + 'header.html', 'r') as myfile:
       header=myfile.read().replace('\n', '')
@@ -136,7 +139,7 @@ class PyFiHTML():
   # since all the static elements are the same, these functions could be combined
   def get_html_footer(self):
     # todo move this whole function to hmtl class
-    static_dir = 'site/static/'
+    static_dir = 'pyfi/site/static/'
     footer = ''
     with open(static_dir + 'footer.html', 'r') as myfile:
       footer=myfile.read().replace('\n', '')
@@ -197,7 +200,7 @@ class PyFiHTML():
     prettyHTML = get_indented_html(raw_html)
 
     # write the file
-    fo = open("site/site_root/" + filename, "w+")
+    fo = open("pyfi/site/site_root/" + filename, "w+")
     fo.write(prettyHTML)
     fo.close()
 

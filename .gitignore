@@ -3,7 +3,7 @@
 credit.tsv.csv
 ledger.tsv.csv
 output/*
-site/site_root/*.html
+pyfi/site/site_root/*.html
 build/*
 dist/*
 MANIFEST
