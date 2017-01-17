@@ -7,4 +7,4 @@ site/site_root/*.html
 build/*
 dist/*
 MANIFEST
-
+.cache/

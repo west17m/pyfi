@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 import unittest
 
-from utilities import *
+from pyfi import *
+
 
 import pandas as pd
 import numpy as np
